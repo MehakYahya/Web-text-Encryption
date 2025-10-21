@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Web Text Encryption</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(165deg, #1B3C53, #F2EAD3);
+        color: #f8fafc;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 4rem;
+      }
+
+      /* Floating glass card */
+      .glass {
+        background: rgba(190, 42, 42, 0.08);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.25);
+        animation: floatCard 4s ease-in-out infinite;
+      }
+
+      @keyframes floatCard {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+
+      /* Fade and scale in */
+      .fade-in {
+        opacity: 0;
+        transform: scale(0.95);
+        animation: fadeInScale 1.2s ease forwards;
+      }
+
+      @keyframes fadeInScale {
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Glow buttons */
+      button {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.15);
+        transform: skewX(-30deg);
+        transition: 0.5s;
+      }
+
+      button:hover::before {
+        left: 100%;
+      }
+
+      button:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 0 15px rgba(129, 140, 248, 0.6);
+      }
+
+      textarea, select, input {
+        transition: 0.3s ease;
+      }
+
+      textarea:focus, select:focus, input:focus {
+        box-shadow: 0 0 15px rgba(129, 140, 248, 0.5);
+      }
+
+      /* Toast notification - top right */
+      #feedback {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        max-width: 350px;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        background: rgba(30, 41, 59, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        opacity: 0;
+        transform: translateX(400px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+      }
+
+      #feedback.show {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+
+      #feedback.success {
+        background: rgba(16, 185, 129, 0.95);
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+
+      #feedback.error {
+        background: rgba(239, 68, 68, 0.95);
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="w-full px-4 flex justify-center">
+      <section class="glass p-8 rounded-3xl w-full max-w-3xl fade-in">
+        <!-- Auth Bar -->
+        <div id="authBar" class="mb-4 flex justify-between items-center">
+          <div id="authStatus" class="text-sm"></div>
+          <div id="authButtons" class="flex gap-2"></div>
+        </div>
+
+        <!-- Header -->
+        <h1 class="text-4xl font-bold text-center bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500 text-transparent bg-clip-text drop-shadow-xl mb-6">
+          Web Text Encryption Tool
+        </h1>
+
+        <!-- Input -->
+        <label for="inputText" class="block text-sm mb-1 font-semibold">Plain Text</label>
+        <textarea id="inputText" rows="5"
+          class="w-full p-4 rounded-lg bg-slate-900 border border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-white"
+          placeholder="Type your message here..."></textarea>
+
+        <div class="mt-5 flex flex-wrap gap-3 justify-center">
+          <select id="method"
+            class="flex-1 p-3 rounded-lg bg-slate-900 border border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-white">
+            <option value="">-- Choose Algorithm --</option>
+            <option value="caesar">Caesar Cipher</option>
+            <option value="aes">AES-256 (Advanced Encryption Standard)</option>
+            <option value="des">DES (Data Encryption Standard)</option>
+            <option value="rsa">RSA (Public Key Encryption)</option>
+            <option value="base64">Base64 (Encoding)</option>
+            <option value="sha256">SHA-256 (Hash)</option>
+          </select>
+
+          <input id="shift" type="number" placeholder="Shift (Caesar)"
+            class="p-3 rounded-lg bg-slate-900 border border-slate-700 hidden text-white"/>
+          <input id="passphrase" type="password" placeholder="Passphrase"
+            class="p-3 rounded-lg bg-slate-900 border border-slate-700 hidden text-white"/>
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-6 flex flex-wrap gap-4 justify-center">
+          <button class="bg-indigo-600 hover:bg-indigo-700 px-6 py-2 rounded-lg font-semibold text-white" id="encryptBtn">Encrypt</button>
+          <button class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold text-white" id="decryptBtn">Decrypt</button>
+          <button class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg font-semibold text-white" id="hashBtn">Hash</button>
+          <button class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded-lg font-semibold text-white" id="saveBtn" style="display: none;"> Save</button>
+          <button class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold text-white" id="viewSavedBtn" style="display: none;"> Saved</button>
+          <button class="bg-slate-600 hover:bg-slate-700 px-6 py-2 rounded-lg font-semibold text-white" id="clearBtn">Clear</button>
+        </div>
+
+        <!-- Output -->
+        <div class="mt-8">
+          <label for="outputText" class="block text-sm mb-1 font-semibold">Encrypted Output</label>
+          <div class="relative">
+            <textarea id="outputText" rows="4" readonly
+              class="w-full p-4 rounded-lg bg-slate-900 border border-slate-700 text-white"
+              placeholder="Encrypted text will appear here..."></textarea>
+            <button id="copyEncryptedBtn"
+              class="absolute top-2 right-2 bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-600 transition">Copy</button>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label for="decryptedText" class="block text-sm mb-1 font-semibold">Decrypted Output</label>
+          <div class="relative">
+            <textarea id="decryptedText" rows="3" readonly
+              class="w-full p-4 rounded-lg bg-slate-900 border border-slate-700 text-white"
+              placeholder="Decrypted text will appear here..."></textarea>
+            <button id="copyDecryptedBtn"
+              class="absolute top-2 right-2 bg-cyan-500 text-white px-3 py-1 rounded-md hover:bg-cyan-600 transition">Copy</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast notification -->
+    <div id="feedback"></div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <div class="glass p-8 rounded-2xl w-full max-w-md mx-4">
+        <h2 id="authModalTitle" class="text-2xl font-bold mb-4 text-center">Login</h2>
+        <div id="authModalContent">
+          <input id="authUsername" type="text" placeholder="Username" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-white mb-3" />
+          <input id="authPassword" type="password" placeholder="Password" class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-white mb-3" />
+          <p id="authError" class="text-red-400 text-sm mb-3 text-center"></p>
+          <div class="flex gap-3">
+            <button id="authSubmit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-semibold text-white">Login</button>
+            <button id="authCancel" class="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg font-semibold text-white">Cancel</button>
+          </div>
+          <p class="text-center mt-3 text-sm">
+            <span id="authToggleText">Don't have an account?</span>
+            <button id="authToggle" class="text-indigo-400 hover:text-indigo-300 ml-1 underline">Register</button>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Messages Modal -->
+    <div id="savedModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <div class="glass p-8 rounded-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold">Saved Messages</h2>
+          <button id="closeSavedModal" class="text-2xl hover:text-red-400">&times;</button>
+        </div>
+        <div id="savedMessagesList" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
