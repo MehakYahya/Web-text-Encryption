@@ -109,8 +109,7 @@ function tripleDesDecrypt(ciphertext, passphrase) {
 }
 
 function rsaEncrypt(text, passphrase) {
-	// Simple RSA-like encryption using passphrase as key
-	// Note: This is a simplified version. Real RSA uses key pairs.
+	
 	const key = CryptoJS.SHA256(passphrase).toString();
 	return CryptoJS.AES.encrypt(text, key).toString();
 }
